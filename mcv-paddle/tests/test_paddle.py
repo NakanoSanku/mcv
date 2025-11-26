@@ -12,20 +12,20 @@ import pytest
 
 from mcv.base import MatchResult, ROI
 from mcv.paddle import (
-    OCRMatchResult,
-    OCRTemplate,
+    PaddleOCRMatchResult,
+    PaddleOCRTemplate,
     PaddleOCRNotInstalledError,
     clear_ocr_cache,
 )
 
 
-class TestOCRMatchResult:
-    """OCRMatchResult dataclass tests."""
+class TestPaddleOCRMatchResult:
+    """PaddleOCRMatchResult dataclass tests."""
 
     def test_properties_basic(self) -> None:
         """Test basic property computation."""
         quad = ((0.0, 0.0), (10.0, 0.0), (10.0, 5.0), (0.0, 5.0))
-        result = OCRMatchResult(text="hello", confidence=0.95, quad=quad)
+        result = PaddleOCRMatchResult(text="hello", confidence=0.95, quad=quad)
 
         assert result.text == "hello"
         assert result.confidence == 0.95
@@ -38,7 +38,7 @@ class TestOCRMatchResult:
     def test_properties_with_float_coords(self) -> None:
         """Test property computation with fractional coordinates."""
         quad = ((1.2, 2.8), (5.7, 2.0), (5.0, 7.9), (1.0, 8.0))
-        result = OCRMatchResult(text="ok", confidence=0.9, quad=quad)
+        result = PaddleOCRMatchResult(text="ok", confidence=0.9, quad=quad)
 
         # top_left uses floor, bottom_right uses ceil
         assert result.top_left == (1, 2)
@@ -50,7 +50,7 @@ class TestOCRMatchResult:
     def test_to_match_result(self) -> None:
         """Test conversion to core MatchResult."""
         quad = ((10.0, 20.0), (30.0, 20.0), (30.0, 40.0), (10.0, 40.0))
-        ocr_result = OCRMatchResult(text="test", confidence=0.85, quad=quad)
+        ocr_result = PaddleOCRMatchResult(text="test", confidence=0.85, quad=quad)
 
         match_result = ocr_result.to_match_result()
 
@@ -64,7 +64,7 @@ class TestOCRMatchResult:
         """Test that tiny quads still produce at least 1x1 bounding box."""
         # Very small quad
         quad = ((5.1, 5.1), (5.2, 5.1), (5.2, 5.2), (5.1, 5.2))
-        result = OCRMatchResult(text=".", confidence=0.9, quad=quad)
+        result = PaddleOCRMatchResult(text=".", confidence=0.9, quad=quad)
 
         # Should be at least 1x1
         assert result.width >= 1
@@ -84,8 +84,8 @@ class DummyOCR:
         return self.outputs
 
 
-class TestOCRTemplate:
-    """OCRTemplate behavior tests with mocked PaddleOCR."""
+class TestPaddleOCRTemplate:
+    """PaddleOCRTemplate behavior tests with mocked PaddleOCR."""
 
     @pytest.fixture(autouse=True)
     def clear_cache_fixture(self) -> None:
@@ -117,18 +117,18 @@ class TestOCRTemplate:
     def test_init_validation_threshold(self) -> None:
         """Test invalid threshold raises error."""
         with pytest.raises(ValueError, match="threshold must be in"):
-            OCRTemplate(pattern="x", threshold=1.5)
+            PaddleOCRTemplate(pattern="x", threshold=1.5)
 
         with pytest.raises(ValueError, match="threshold must be in"):
-            OCRTemplate(pattern="x", threshold=-0.1)
+            PaddleOCRTemplate(pattern="x", threshold=-0.1)
 
     def test_init_validation_max_count(self) -> None:
         """Test invalid max_count raises error."""
         with pytest.raises(ValueError, match="max_count must be positive"):
-            OCRTemplate(pattern="x", max_count=0)
+            PaddleOCRTemplate(pattern="x", max_count=0)
 
         with pytest.raises(ValueError, match="max_count must be positive"):
-            OCRTemplate(pattern="x", max_count=-1)
+            PaddleOCRTemplate(pattern="x", max_count=-1)
 
     def test_find_exact_match(self, monkeypatch, sample_ocr_output) -> None:
         """Test finding text with exact substring match."""
@@ -136,7 +136,7 @@ class TestOCRTemplate:
         monkeypatch.setattr("mcv.paddle._get_ocr_client", lambda **_: dummy)
 
         img = np.zeros((100, 100, 3), dtype=np.uint8)
-        template = OCRTemplate(pattern="确认", threshold=0.5)
+        template = PaddleOCRTemplate(pattern="确认", threshold=0.5)
 
         result = template.find(img)
 
@@ -150,7 +150,7 @@ class TestOCRTemplate:
         monkeypatch.setattr("mcv.paddle._get_ocr_client", lambda **_: dummy)
 
         img = np.zeros((100, 100, 3), dtype=np.uint8)
-        template = OCRTemplate(pattern="金币", threshold=0.5, max_count=10)
+        template = PaddleOCRTemplate(pattern="金币", threshold=0.5, max_count=10)
 
         results = template.find_all(img)
 
@@ -163,7 +163,7 @@ class TestOCRTemplate:
         monkeypatch.setattr("mcv.paddle._get_ocr_client", lambda **_: dummy)
 
         img = np.zeros((100, 100, 3), dtype=np.uint8)
-        template = OCRTemplate(pattern=None, threshold=0.5, max_count=10)
+        template = PaddleOCRTemplate(pattern=None, threshold=0.5, max_count=10)
 
         results = template.find_all(img)
 
@@ -180,7 +180,7 @@ class TestOCRTemplate:
 
         img = np.zeros((100, 100, 3), dtype=np.uint8)
         # Match numbers
-        template = OCRTemplate(pattern=r"\d+", regex=True, threshold=0.5)
+        template = PaddleOCRTemplate(pattern=r"\d+", regex=True, threshold=0.5)
 
         results = template.find_all(img)
 
@@ -194,7 +194,7 @@ class TestOCRTemplate:
 
         img = np.zeros((100, 100, 3), dtype=np.uint8)
         pattern = re.compile(r"金币:\d+")
-        template = OCRTemplate(pattern=pattern, threshold=0.5)
+        template = PaddleOCRTemplate(pattern=pattern, threshold=0.5)
 
         result = template.find(img)
 
@@ -209,7 +209,7 @@ class TestOCRTemplate:
         img = np.zeros((100, 100, 3), dtype=np.uint8)
 
         # High threshold excludes most results
-        template = OCRTemplate(pattern=None, threshold=0.9, max_count=10)
+        template = PaddleOCRTemplate(pattern=None, threshold=0.9, max_count=10)
         results = template.find_all(img)
         assert len(results) == 1
         assert results[0].text == "确认"
@@ -224,7 +224,7 @@ class TestOCRTemplate:
         monkeypatch.setattr("mcv.paddle._get_ocr_client", lambda **_: dummy)
 
         img = np.zeros((100, 100, 3), dtype=np.uint8)
-        template = OCRTemplate(pattern=None, threshold=0.99, max_count=10)
+        template = PaddleOCRTemplate(pattern=None, threshold=0.99, max_count=10)
 
         # Default threshold too high
         results = template.find_all(img)
@@ -250,7 +250,7 @@ class TestOCRTemplate:
         img = np.zeros((200, 200, 3), dtype=np.uint8)
         roi = ROI(x=50, y=100, width=80, height=60)
 
-        template = OCRTemplate(pattern=None, threshold=0.5)
+        template = PaddleOCRTemplate(pattern=None, threshold=0.5)
         results = template.find_all(img, roi=roi)
 
         assert len(results) == 1
@@ -277,7 +277,7 @@ class TestOCRTemplate:
         monkeypatch.setattr("mcv.paddle._get_ocr_client", lambda **_: dummy)
 
         img = np.zeros((100, 100, 3), dtype=np.uint8)
-        template = OCRTemplate(pattern=None, threshold=0.5)
+        template = PaddleOCRTemplate(pattern=None, threshold=0.5)
 
         # ROI as list
         results = template.find_all(img, roi=[10, 20, 30, 40])
@@ -290,7 +290,7 @@ class TestOCRTemplate:
         monkeypatch.setattr("mcv.paddle._get_ocr_client", lambda **_: dummy)
 
         img = np.zeros((100, 100, 3), dtype=np.uint8)
-        template = OCRTemplate(pattern=None, threshold=0.2, max_count=2)
+        template = PaddleOCRTemplate(pattern=None, threshold=0.2, max_count=2)
 
         results = template.find_all(img)
         assert len(results) == 2
@@ -305,7 +305,7 @@ class TestOCRTemplate:
         monkeypatch.setattr("mcv.paddle._get_ocr_client", lambda **_: dummy)
 
         img = np.zeros((100, 100, 3), dtype=np.uint8)
-        template = OCRTemplate(pattern=None, threshold=0.2, max_count=10)
+        template = PaddleOCRTemplate(pattern=None, threshold=0.2, max_count=10)
 
         results = template.find_all(img)
 
@@ -318,21 +318,21 @@ class TestOCRTemplate:
         monkeypatch.setattr("mcv.paddle._get_ocr_client", lambda **_: dummy)
 
         img = np.zeros((100, 100), dtype=np.uint8)  # Grayscale
-        template = OCRTemplate(pattern="确认", threshold=0.5)
+        template = PaddleOCRTemplate(pattern="确认", threshold=0.5)
 
         result = template.find(img)
         assert result is not None
 
     def test_invalid_image_type(self) -> None:
         """Test invalid image type raises error."""
-        template = OCRTemplate(pattern="test")
+        template = PaddleOCRTemplate(pattern="test")
 
         with pytest.raises(TypeError, match="numpy.ndarray"):
             template.find("not an array")  # type: ignore
 
     def test_invalid_image_shape(self) -> None:
         """Test invalid image shape raises error."""
-        template = OCRTemplate(pattern="test")
+        template = PaddleOCRTemplate(pattern="test")
 
         # 4-channel image
         invalid = np.zeros((100, 100, 4), dtype=np.uint8)
@@ -345,7 +345,7 @@ class TestOCRTemplate:
         monkeypatch.setattr("mcv.paddle._get_ocr_client", lambda **_: dummy)
 
         img = np.zeros((100, 100, 3), dtype=np.uint8)
-        template = OCRTemplate(pattern=None, threshold=0.5)
+        template = PaddleOCRTemplate(pattern=None, threshold=0.5)
 
         results = template.find_all(img)
         assert results == []
@@ -359,7 +359,7 @@ class TestOCRTemplate:
         monkeypatch.setattr("mcv.paddle._get_ocr_client", lambda **_: dummy)
 
         img = np.zeros((100, 100, 3), dtype=np.uint8)
-        template = OCRTemplate(pattern="不存在的文字", threshold=0.5)
+        template = PaddleOCRTemplate(pattern="不存在的文字", threshold=0.5)
 
         result = template.find(img)
         assert result is None

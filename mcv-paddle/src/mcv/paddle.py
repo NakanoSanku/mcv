@@ -4,15 +4,15 @@ This module adapts PaddleOCR output to the MCV Template API.
 It supports exact/regex text search and full-text extraction via pattern=None.
 
 Example:
-    >>> from mcv.paddle import OCRTemplate
+    >>> from mcv.paddle import PaddleOCRTemplate
     >>> # Find specific text
-    >>> template = OCRTemplate(pattern="确认", lang="ch")
+    >>> template = PaddleOCRTemplate(pattern="确认", lang="ch")
     >>> result = template.find(image)
     >>> if result:
     ...     print(f"Found '{result.text}' at {result.center}")
     >>>
     >>> # Extract all text in region
-    >>> template = OCRTemplate(pattern=None, lang="ch")
+    >>> template = PaddleOCRTemplate(pattern=None, lang="ch")
     >>> results = template.find_all(image, roi=[100, 100, 200, 200])
     >>> for r in results:
     ...     print(f"{r.text}: {r.confidence:.2f}")
@@ -116,8 +116,8 @@ def clear_ocr_cache() -> None:
 
 
 @dataclass(frozen=True)
-class OCRMatchResult:
-    """OCR match result with recognized text information.
+class PaddleOCRMatchResult:
+    """PaddleOCR match result with recognized text information.
 
     This extends the concept of MatchResult with OCR-specific fields
     while maintaining compatibility through the to_match_result() method.
@@ -202,7 +202,7 @@ class OCRMatchResult:
         )
 
 
-class OCRTemplate(Template):
+class PaddleOCRTemplate(Template):
     """PaddleOCR-based text template for finding text in images.
 
     This template uses PaddleOCR to detect and recognize text, then
@@ -214,19 +214,19 @@ class OCRTemplate(Template):
         >>> screen = cv2.imread("screenshot.png")
         >>>
         >>> # Find specific button text
-        >>> template = OCRTemplate(pattern="确认", lang="ch", threshold=0.8)
+        >>> template = PaddleOCRTemplate(pattern="确认", lang="ch", threshold=0.8)
         >>> result = template.find(screen)
         >>> if result:
         ...     print(f"Found '{result.text}' at {result.center}")
         >>>
         >>> # Find text matching regex
-        >>> template = OCRTemplate(pattern=r"\\d+", regex=True)
+        >>> template = PaddleOCRTemplate(pattern=r"\\d+", regex=True)
         >>> results = template.find_all(screen)
         >>> for r in results:
         ...     print(f"Number found: {r.text}")
         >>>
         >>> # Extract all text in a region
-        >>> template = OCRTemplate(pattern=None)
+        >>> template = PaddleOCRTemplate(pattern=None)
         >>> results = template.find_all(screen, roi=[0, 0, 500, 500])
 
     Attributes:
@@ -290,7 +290,7 @@ class OCRTemplate(Template):
         image: np.ndarray,
         roi: Optional[ROILike] = None,
         threshold: Optional[float] = None,
-    ) -> Optional[OCRMatchResult]:
+    ) -> Optional[PaddleOCRMatchResult]:
         """Find the first text matching the pattern.
 
         Args:
@@ -299,7 +299,7 @@ class OCRTemplate(Template):
             threshold: Confidence threshold, overrides default
 
         Returns:
-            Best matching OCRMatchResult, or None if not found
+            Best matching PaddleOCRMatchResult, or None if not found
         """
         results = self.find_all(image, roi=roi, threshold=threshold, max_count=1)
         return results[0] if results else None
@@ -310,7 +310,7 @@ class OCRTemplate(Template):
         roi: Optional[ROILike] = None,
         threshold: Optional[float] = None,
         max_count: Optional[int] = None,
-    ) -> List[OCRMatchResult]:
+    ) -> List[PaddleOCRMatchResult]:
         """Find all text instances matching the pattern.
 
         Args:
@@ -320,7 +320,7 @@ class OCRTemplate(Template):
             max_count: Maximum results to return, overrides default
 
         Returns:
-            List of OCRMatchResult sorted by confidence (descending)
+            List of PaddleOCRMatchResult sorted by confidence (descending)
         """
         self._validate_image(image)
 
@@ -354,7 +354,7 @@ class OCRTemplate(Template):
             return []
 
         effective_threshold = self._resolve_threshold(threshold)
-        matches: List[OCRMatchResult] = []
+        matches: List[PaddleOCRMatchResult] = []
 
         for entry in entries:
             if not entry or len(entry) < 2:
@@ -382,7 +382,7 @@ class OCRTemplate(Template):
                 continue
 
             matches.append(
-                OCRMatchResult(
+                PaddleOCRMatchResult(
                     text=str(text),
                     confidence=confidence,
                     quad=quad,

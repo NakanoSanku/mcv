@@ -161,13 +161,13 @@ class Template(ABC):
 
 具体模版基类由各子包定义，建议命名：
 
-| 子包       | 模版类                    | 用途              |
-| ---------- | ------------------------- | ----------------- |
-| mcv-image  | `ImageTemplate`           | 图像模版匹配      |
-| mcv-color  | `MultiColorTemplate`      | 多点找色匹配      |
-| mcv-paddle | `OCRTemplate`             | PaddleOCR文字识别 |
-| mcv-rapid  | `RapidOCRTemplate`        | RapidOCR文字识别  |
-| mcv-features | `FeatureTemplate`       | 特征点匹配 (计划中) |
+| 子包         | 模版类                 | 用途                |
+| ------------ | ---------------------- | ------------------- |
+| mcv-image    | `ImageTemplate`      | 图像模版匹配        |
+| mcv-color    | `MultiColorTemplate` | 多点找色匹配        |
+| mcv-paddle   | `PaddleOCRTemplate`  | PaddleOCR文字识别   |
+| mcv-rapid    | `RapidOCRTemplate`   | RapidOCR文字识别    |
+| mcv-features | `FeatureTemplate`    | 特征点匹配 (计划中) |
 
 ### 输入规范
 
@@ -224,22 +224,22 @@ if result:
 
 ```python
 # 使用 PaddleOCR 后端
-from mcv.paddle import OCRTemplate
+from mcv.paddle import PaddleOCRTemplate
 
 # 查找特定文字
-template = OCRTemplate(pattern="确认", lang="ch", threshold=0.8)
+template = PaddleOCRTemplate(pattern="确认", lang="ch", threshold=0.8)
 result = template.find(screen)
 if result:
     print(f"找到文字 '{result.text}' 在 {result.center}, 置信度: {result.confidence:.2f}")
 
 # 使用正则表达式匹配数字
-template = OCRTemplate(pattern=r"\d+", regex=True)
+template = PaddleOCRTemplate(pattern=r"\d+", regex=True)
 results = template.find_all(screen)
 for r in results:
     print(f"数字: {r.text}")
 
 # 提取所有文字 (pattern=None)
-template = OCRTemplate(pattern=None, threshold=0.5)
+template = PaddleOCRTemplate(pattern=None, threshold=0.5)
 results = template.find_all(screen, roi=[0, 0, 500, 300])
 ```
 

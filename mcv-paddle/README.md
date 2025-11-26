@@ -17,25 +17,25 @@ pip install paddleocr
 
 ```python
 import cv2
-from mcv.paddle import OCRTemplate
+from mcv.paddle import PaddleOCRTemplate
 
 # Load image
 screen = cv2.imread("screenshot.png")
 
 # Find specific text
-template = OCRTemplate(pattern="确认", lang="ch", threshold=0.8)
+template = PaddleOCRTemplate(pattern="确认", lang="ch", threshold=0.8)
 result = template.find(screen)
 if result:
     print(f"Found '{result.text}' at {result.center}")
 
 # Find text matching regex
-template = OCRTemplate(pattern=r"\d+", regex=True, lang="ch")
+template = PaddleOCRTemplate(pattern=r"\d+", regex=True, lang="ch")
 results = template.find_all(screen)
 for r in results:
     print(f"Number: {r.text}, confidence: {r.confidence:.2f}")
 
 # Extract all text in region
-template = OCRTemplate(pattern=None, lang="ch")
+template = PaddleOCRTemplate(pattern=None, lang="ch")
 results = template.find_all(screen, roi=[100, 100, 200, 200])
 for r in results:
     print(f"{r.text}: {r.confidence:.2f}")
@@ -43,7 +43,7 @@ for r in results:
 
 ## API
 
-### OCRTemplate
+### PaddleOCRTemplate
 
 Main class for OCR-based text matching.
 
@@ -56,10 +56,10 @@ Main class for OCR-based text matching.
 - `use_gpu`: Enable GPU acceleration.
 
 **Methods:**
-- `find(image, roi=None, threshold=None) -> OCRMatchResult | None`
-- `find_all(image, roi=None, threshold=None, max_count=None) -> List[OCRMatchResult]`
+- `find(image, roi=None, threshold=None) -> PaddleOCRMatchResult | None`
+- `find_all(image, roi=None, threshold=None, max_count=None) -> List[PaddleOCRMatchResult]`
 
-### OCRMatchResult
+### PaddleOCRMatchResult
 
 OCR match result with text information.
 
