@@ -1,0 +1,28 @@
+[project]
+name = "mcv"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "mcv-base",
+    "mcv-image",
+    "mcv-color",
+]
+
+[tool.uv.workspace]
+members = ["mcv-base", "mcv-image", "mcv-color", "mcv-paddle", "mcv-rapid"]
+
+[tool.uv.sources]
+mcv-base = { workspace = true }
+mcv-image = { workspace = true }
+mcv-color = { workspace = true }
+mcv-paddle = { workspace = true }
+mcv-rapid = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "mcv-paddle",
+    "mcv-rapid",
+    "pytest>=8.4.2",
+]
