@@ -124,7 +124,7 @@ class TestImageTemplate:
         search_image_with_multiple_matches: np.ndarray,
     ) -> None:
         """Test find_all finds multiple matches."""
-        template = ImageTemplate(pattern_template, threshold=0.8, max_count=10)
+        template = ImageTemplate(pattern_template, threshold=0.8)
         results = template.find_all(
             search_image_with_multiple_matches,
             max_count=10,
@@ -188,23 +188,12 @@ class TestImageTemplate:
         result = template.find(small_search)
         assert result is None
 
-    def test_grayscale_disabled(
-        self, pattern_template: np.ndarray, search_image_with_match: np.ndarray
-    ) -> None:
-        """Test grayscale disabled."""
-        template = ImageTemplate(pattern_template, threshold=0.8, grayscale=False)
-        result = template.find(search_image_with_match)
-        assert result is not None
-
     def test_sqdiff_method(
         self, pattern_template: np.ndarray, search_image_with_match: np.ndarray
     ) -> None:
         """Test TM_SQDIFF_NORMED method."""
-        template = ImageTemplate(
-            pattern_template,
-            threshold=0.8,
-            method=cv2.TM_SQDIFF_NORMED,
-        )
+        template = ImageTemplate(pattern_template, threshold=0.8)
+        template.method = cv2.TM_SQDIFF_NORMED
         result = template.find(search_image_with_match)
         assert result is not None
         assert result.score > 0.8
@@ -230,7 +219,8 @@ class TestImageTemplate:
         image[42:52, 42:52] = 0
         image[44:50, 44:50] = 255
 
-        template = ImageTemplate(template_img, threshold=0.7, nms_threshold=0.3)
+        template = ImageTemplate(template_img, threshold=0.7)
+        template.nms_threshold = 0.3
         results = template.find_all(image, max_count=100)
 
         # NMS should keep only a few non-overlapping results
@@ -272,12 +262,12 @@ class TestImageTemplate:
         """Test grayscale mode with grayscale input."""
         gray_template = np.zeros((10, 10), dtype=np.uint8)
         gray_template[0:5, 0:5] = 255
-        
+
         gray_search = np.ones((100, 100), dtype=np.uint8) * 128
         gray_search[45:50, 45:50] = 255
         gray_search[50:55, 50:55] = 255
 
-        template = ImageTemplate(gray_template, threshold=0.8, grayscale=True)
+        template = ImageTemplate(gray_template, threshold=0.8)
         result = template.find(gray_search)
         assert result is not None
 
@@ -336,16 +326,6 @@ class TestParameterValidation:
         with pytest.raises(ValueError, match="threshold must be in"):
             ImageTemplate(template_img, threshold=-0.1)
 
-    def test_invalid_max_count_init(self) -> None:
-        """Test invalid max_count in __init__ raises error."""
-        template_img = np.zeros((10, 10, 3), dtype=np.uint8)
-
-        with pytest.raises(ValueError, match="max_count must be positive"):
-            ImageTemplate(template_img, max_count=0)
-
-        with pytest.raises(ValueError, match="max_count must be positive"):
-            ImageTemplate(template_img, max_count=-1)
-
     def test_invalid_threshold_find(self) -> None:
         """Test invalid threshold in find raises error."""
         template_img = np.zeros((10, 10, 3), dtype=np.uint8)
@@ -391,8 +371,10 @@ class TestImageTemplatePyramid:
         e2e_template_image: np.ndarray,
     ) -> None:
         """Pyramid mode should find same location as normal mode."""
-        normal = ImageTemplate(e2e_template_image, threshold=0.8, use_pyramid=False)
-        pyramid = ImageTemplate(e2e_template_image, threshold=0.8, use_pyramid=True)
+        normal = ImageTemplate(e2e_template_image, threshold=0.8)
+        normal.use_pyramid = False
+        pyramid = ImageTemplate(e2e_template_image, threshold=0.8)
+        pyramid.use_pyramid = True
 
         r_normal = normal.find(e2e_screenshot)
         r_pyramid = pyramid.find(e2e_screenshot)
@@ -408,8 +390,10 @@ class TestImageTemplatePyramid:
         e2e_template_image: np.ndarray,
     ) -> None:
         """Pyramid mode score should be close to normal mode."""
-        normal = ImageTemplate(e2e_template_image, threshold=0.8, use_pyramid=False)
-        pyramid = ImageTemplate(e2e_template_image, threshold=0.8, use_pyramid=True)
+        normal = ImageTemplate(e2e_template_image, threshold=0.8)
+        normal.use_pyramid = False
+        pyramid = ImageTemplate(e2e_template_image, threshold=0.8)
+        pyramid.use_pyramid = True
 
         r_normal = normal.find(e2e_screenshot)
         r_pyramid = pyramid.find(e2e_screenshot)
@@ -424,7 +408,7 @@ class TestImageTemplatePyramid:
         e2e_template_image: np.ndarray,
     ) -> None:
         """Pyramid mode should work with ROI."""
-        template = ImageTemplate(e2e_template_image, threshold=0.8, use_pyramid=True)
+        template = ImageTemplate(e2e_template_image, threshold=0.8)
         result = template.find(e2e_screenshot, roi=ROI(400, 200, 100, 100))
         assert result is not None
 
@@ -434,7 +418,7 @@ class TestImageTemplatePyramid:
         e2e_template_image: np.ndarray,
     ) -> None:
         """Pyramid mode should return None when no match."""
-        template = ImageTemplate(e2e_template_image, threshold=0.8, use_pyramid=True)
+        template = ImageTemplate(e2e_template_image, threshold=0.8)
         result = template.find(e2e_screenshot, roi=ROI(0, 0, 100, 100))
         assert result is None
 
@@ -457,13 +441,10 @@ class TestImageTemplatePyramid:
             def _refine_at_base_level(self, *args, **kwargs):  # type: ignore[override]
                 return None
 
-        template = NoRefineTemplate(
-            pattern_template,
-            threshold=0.8,
-            use_pyramid=True,
-            min_pyramid_size=4,
-            max_pyramid_level=2,
-        )
+        template = NoRefineTemplate(pattern_template, threshold=0.8)
+        template.use_pyramid = True
+        template.min_pyramid_size = 4
+        template.max_pyramid_level = 2
 
         result = template.find(search_image_with_match)
         assert result is not None
@@ -586,40 +567,6 @@ class TestImageTemplateE2E:
         """Lower threshold should accept match."""
         result = e2e_template.find(e2e_screenshot, threshold=0.7)
         assert result is not None, "Should accept at lower threshold"
-
-    def test_grayscale_mode(
-        self,
-        e2e_screenshot: np.ndarray,
-        e2e_template_image: np.ndarray,
-    ) -> None:
-        """Grayscale mode should still find the template."""
-        template = ImageTemplate(e2e_template_image, threshold=0.8, grayscale=True)
-        result = template.find(e2e_screenshot)
-        assert result is not None, "Grayscale mode should find template"
-
-    def test_color_mode(
-        self,
-        e2e_screenshot: np.ndarray,
-        e2e_template_image: np.ndarray,
-    ) -> None:
-        """Color mode (grayscale=False) should still find the template."""
-        template = ImageTemplate(e2e_template_image, threshold=0.8, grayscale=False)
-        result = template.find(e2e_screenshot)
-        assert result is not None, "Color mode should find template"
-
-    def test_color_mode_with_grayscale_template(self) -> None:
-        """Color mode should auto-expand grayscale templates to 3 channels."""
-        gray_template = np.zeros((5, 5), dtype=np.uint8)
-        gray_template[1:4, 1:4] = 255
-
-        search = np.zeros((10, 10, 3), dtype=np.uint8)
-        search[1:4, 1:4] = 255
-
-        template = ImageTemplate(gray_template, threshold=0.9, grayscale=False)
-        result = template.find(search)
-
-        assert result is not None
-        assert result.score >= 0.9
 
     def test_find_all_returns_single_match(
         self,

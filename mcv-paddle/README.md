@@ -56,8 +56,8 @@ Main class for OCR-based text matching.
 - `use_gpu`: Enable GPU acceleration.
 
 **Methods:**
-- `find(image, roi=None, threshold=None) -> PaddleOCRMatchResult | None`
-- `find_all(image, roi=None, threshold=None, max_count=None) -> List[PaddleOCRMatchResult]`
+- `find(image, roi=None, threshold=None) -> PaddleOCRMatchResult | None`：返回单个置信度最高的结果
+- `find_all(image, roi=None, threshold=None, max_count=None) -> List[PaddleOCRMatchResult]`：返回所有满足阈值的结果，按置信度降序排序，`max_count`（如指定）限制数量
 
 ### PaddleOCRMatchResult
 

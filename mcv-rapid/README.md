@@ -95,7 +95,6 @@ RapidOCRTemplate(
     regex=False,            # 是否启用正则匹配
     roi=None,               # 默认搜索区域 [x, y, width, height]
     threshold=0.5,          # 置信度阈值 [0, 1]
-    max_count=10,           # 最大返回数量
     det_use_cuda=False,     # 检测模型使用 CUDA
     cls_use_cuda=False,     # 分类模型使用 CUDA
     rec_use_cuda=False,     # 识别模型使用 CUDA
@@ -117,6 +116,10 @@ OCR 识别结果，包含以下属性：
 
 方法：
 - `to_match_result()`: 转换为核心 MatchResult 类型
+
+使用说明：
+- `find(image, ...)` 返回单个置信度最高的结果；
+- `find_all(image, ..., max_count=None)` 返回所有满足阈值的结果，按置信度降序排序，`max_count`（如指定）限制数量。
 
 ## 与 mcv-paddle 的比较
 

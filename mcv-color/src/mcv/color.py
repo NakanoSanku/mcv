@@ -54,7 +54,6 @@ class MultiColorTemplate(Template):
         *,
         roi: Optional[ROILike] = None,
         threshold: float = 1.0,
-        max_count: int = 1,
     ) -> None:
         """Initialize multi-point color template.
 
@@ -63,12 +62,11 @@ class MultiColorTemplate(Template):
             offsets: Offset points [(dx, dy, color), ...]
             roi: Default search region
             threshold: Color similarity threshold [0, 1], 1.0 = exact match
-            max_count: Default maximum result count
 
         Raises:
             ValueError: Invalid color format or threshold
         """
-        super().__init__(roi=roi, threshold=threshold, max_count=max_count)
+        super().__init__(roi=roi, threshold=threshold)
 
         self._first_color = self._normalize_color(first_color)
         # Pre-convert to int16 for efficient comparison
@@ -172,7 +170,11 @@ class MultiColorTemplate(Template):
             return []
 
         effective_threshold = self._resolve_threshold(threshold)
-        effective_max_count = self._resolve_max_count(max_count)
+        effective_max_count: Optional[int]
+        if max_count is not None:
+            effective_max_count = self._resolve_max_count(max_count)
+        else:
+            effective_max_count = None
 
         # Calculate tolerance from threshold
         # threshold=1.0 -> tolerance=0 (exact match)
@@ -203,7 +205,9 @@ class MultiColorTemplate(Template):
 
         # Sort by confidence (higher is better) to match Template contract
         results.sort(key=lambda r: r.score, reverse=True)
-        return results[:effective_max_count]
+        if effective_max_count is not None:
+            return results[:effective_max_count]
+        return results
 
     def _validate_image(self, image: np.ndarray) -> None:
         """Validate image format.

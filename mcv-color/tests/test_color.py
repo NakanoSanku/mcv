@@ -156,7 +156,7 @@ class TestMultiColorTemplate:
         image[50, 50] = [30, 132, 30]
         image[70, 80] = [30, 132, 30]
 
-        template = MultiColorTemplate(first_color="1E841E", offsets=[], max_count=10)
+        template = MultiColorTemplate(first_color="1E841E", offsets=[])
         results = template.find_all(image)
 
         assert len(results) == 3
@@ -191,7 +191,6 @@ class TestMultiColorTemplate:
             first_color="1E841E",
             offsets=[],
             threshold=0.85,
-            max_count=5,
         )
 
         results = template.find_all(image)
@@ -253,5 +252,7 @@ class TestValidation:
 
     def test_invalid_max_count(self):
         """Test invalid max_count value."""
+        image = np.zeros((100, 100, 3), dtype=np.uint8)
+        template = MultiColorTemplate(first_color="FF0000", offsets=[])
         with pytest.raises(ValueError, match="max_count"):
-            MultiColorTemplate(first_color="FF0000", offsets=[], max_count=0)
+            template.find_all(image, max_count=0)

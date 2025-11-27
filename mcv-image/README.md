@@ -54,10 +54,6 @@ ImageTemplate(
     *,
     roi: Optional[ROILike] = None,     # 默认搜索区域
     threshold: float = 0.8,            # 默认匹配阈值 [0, 1]
-    max_count: int = 1,                # 默认最大返回数量
-    grayscale: bool = True,            # 灰度化匹配
-    method: int = cv2.TM_CCOEFF_NORMED,  # OpenCV 匹配方法
-    nms_threshold: float = 0.5,        # NMS IoU 阈值
 )
 ```
 
@@ -66,9 +62,7 @@ ImageTemplate(
 | 参数 | 说明 |
 |------|------|
 | `template_image` | 模版图像，numpy.ndarray，支持 BGR (HxWx3) 或灰度 (HxW) |
-| `grayscale` | 是否转换为灰度进行匹配，减少计算量 |
-| `method` | OpenCV matchTemplate 方法，支持 `TM_CCOEFF_NORMED`、`TM_SQDIFF_NORMED` 等 |
-| `nms_threshold` | 非极大值抑制阈值，值越低去重越激进 |
+| `threshold` | 默认匹配阈值，范围 [0, 1] |
 
 ### 方法
 
@@ -91,7 +85,7 @@ ImageTemplate(
 - **ROI 处理**: 支持 `ROI` 对象或 `[x, y, width, height]` 列表；默认为全图搜索；越界自动裁剪，完全越界返回空列表
 - **尺寸检查**: 模版尺寸必须小于搜索区域，否则返回空结果
 - **类型验证**: `template_image` 和 `image` 必须是 numpy.ndarray (HxW 或 HxWx3)，否则抛出 `TypeError`/`ValueError`
-- **参数验证**: `threshold` 必须在 [0, 1] 范围内，`max_count` 必须为正整数，否则抛出 `ValueError`
+- **参数验证**: `threshold` 必须在 [0, 1] 范围内，`max_count`（如指定）必须为正整数，否则抛出 `ValueError`
 - **NMS 去重**: 基于 IoU 去除重叠匹配，避免重复检测
 - **分数归一化**: 所有分数统一到 [0, 1] 范围，便于跨方法比较
 
@@ -107,5 +101,4 @@ ImageTemplate(
 | 场景 | 建议 |
 |------|------|
 | 大图搜索 | 使用 `roi` 限制搜索范围 |
-| 彩色敏感 | 设置 `grayscale=False` |
-| 多目标 | 调整 `nms_threshold` 控制去重程度 |
+| 多目标 | 依赖内置 NMS 去重，必要时可通过实例属性微调 |

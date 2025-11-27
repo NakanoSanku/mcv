@@ -44,13 +44,6 @@ class ImageTemplate(Template):
         *,
         roi: Optional[ROILike] = None,
         threshold: float = 0.8,
-        max_count: int = 1,
-        grayscale: bool = True,
-        method: int = cv2.TM_CCOEFF_NORMED,
-        nms_threshold: float = 0.5,
-        use_pyramid: bool = False,
-        max_pyramid_level: int = 4,
-        min_pyramid_size: int = 16,
     ) -> None:
         """Initialize image template.
 
@@ -58,28 +51,29 @@ class ImageTemplate(Template):
             template_image: Template image (numpy.ndarray, BGR or grayscale)
             roi: Default search region
             threshold: Default match threshold
-            max_count: Default maximum result count
-            grayscale: Convert to grayscale for matching, default True
-            method: OpenCV matching method, default TM_CCOEFF_NORMED
-            nms_threshold: NMS IoU threshold, default 0.5
-            use_pyramid: Enable coarse-to-fine pyramid matching, default False
-            max_pyramid_level: Maximum downscale steps for pyramid, default 4
-            min_pyramid_size: Minimum edge length for pyramid steps, default 16
 
         Raises:
             TypeError: Invalid image type
             ValueError: Unsupported image format
         """
-        super().__init__(roi=roi, threshold=threshold, max_count=max_count)
+        # max_count is intentionally fixed at 1 for ImageTemplate.
+        # find_all() ignores this default and returns all matches unless
+        # max_count is explicitly provided by the caller.
+        super().__init__(roi=roi, threshold=threshold, max_count=1)
 
         self._validate_image(template_image)
         self.template_image = template_image
-        self.grayscale = grayscale
-        self.method = method
-        self.nms_threshold = nms_threshold
-        self.use_pyramid = use_pyramid
-        self.max_pyramid_level = max_pyramid_level
-        self.min_pyramid_size = min_pyramid_size
+        # Always enable grayscale matching for robustness and performance.
+        self.grayscale = True
+        # Default matching method and NMS settings are fixed for simplicity.
+        self.method = cv2.TM_CCOEFF_NORMED
+        self.nms_threshold = 0.5
+        # Always enable pyramid matching for single-target search.
+        # Advanced users can modify these attributes after initialization
+        # if they need to fine-tune performance.
+        self.use_pyramid = True
+        self.max_pyramid_level = 4
+        self.min_pyramid_size = 16
 
         self._template_processed = self._preprocess(template_image)
         self._template_height, self._template_width = self._template_processed.shape[:2]
@@ -117,7 +111,7 @@ class ImageTemplate(Template):
             image: Search image (BGR format)
             roi: Search region
             threshold: Match threshold
-            max_count: Maximum result count
+            max_count: Maximum result count. If None, return all matches.
 
         Returns:
             List of match results, sorted by confidence descending
@@ -139,9 +133,15 @@ class ImageTemplate(Template):
         search_processed = self._preprocess(roi_image)
 
         effective_threshold = self._resolve_threshold(threshold)
-        effective_max_count = self._resolve_max_count(max_count)
+        effective_max_count: Optional[int]
+        if max_count is not None:
+            effective_max_count = self._resolve_max_count(max_count)
+        else:
+            effective_max_count = None
 
-        if self.use_pyramid and effective_max_count == 1:
+        # Only enable pyramid acceleration when caller explicitly requests
+        # a single best match (find / find_all with max_count=1).
+        if self.use_pyramid and max_count == 1:
             return self._match_with_pyramid(
                 search_processed, effective_roi, effective_threshold
             )
@@ -261,13 +261,13 @@ class ImageTemplate(Template):
     def _apply_nms(
         self,
         matches: List[MatchResult],
-        max_count: int,
+        max_count: Optional[int],
     ) -> List[MatchResult]:
         """Apply Non-Maximum Suppression.
 
         Args:
             matches: Candidate matches (sorted by score descending)
-            max_count: Maximum results to keep
+            max_count: Maximum results to keep; None means no explicit limit
 
         Returns:
             Filtered match list
@@ -291,7 +291,7 @@ class ImageTemplate(Template):
             i = int(order[0])
             keep.append(i)
 
-            if len(keep) >= max_count:
+            if max_count is not None and len(keep) >= max_count:
                 break
 
             xx1 = np.maximum(boxes[i, 0], boxes[order[1:], 0])

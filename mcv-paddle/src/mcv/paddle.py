@@ -244,7 +244,6 @@ class PaddleOCRTemplate(Template):
         regex: bool = False,
         roi: Optional[ROILike] = None,
         threshold: float = 0.5,
-        max_count: int = 10,
         lang: str = "ch",
         use_angle_cls: bool = True,
         use_gpu: bool = False,
@@ -260,7 +259,6 @@ class PaddleOCRTemplate(Template):
                    Ignored if pattern is already a Pattern object.
             roi: Default search region
             threshold: Minimum confidence threshold [0, 1]
-            max_count: Default maximum results to return
             lang: PaddleOCR language code.
                   Common values: "ch" (Chinese+English), "en" (English),
                   "japan", "korean", "german", "french"
@@ -268,9 +266,9 @@ class PaddleOCRTemplate(Template):
             use_gpu: Use GPU acceleration (requires paddlepaddle-gpu)
 
         Raises:
-            ValueError: If threshold or max_count is invalid
+            ValueError: If threshold is invalid
         """
-        super().__init__(roi=roi, threshold=threshold, max_count=max_count)
+        super().__init__(roi=roi, threshold=threshold)
 
         self.pattern = pattern
         self.regex = regex
@@ -395,8 +393,11 @@ class PaddleOCRTemplate(Template):
         # Sort by confidence descending
         matches.sort(key=lambda m: m.confidence, reverse=True)
 
-        effective_max_count = self._resolve_max_count(max_count)
-        return matches[:effective_max_count]
+        effective_max_count: Optional[int]
+        if max_count is not None:
+            effective_max_count = self._resolve_max_count(max_count)
+            return matches[:effective_max_count]
+        return matches
 
     def _matches_pattern(self, text: str) -> bool:
         """Check if text matches the configured pattern.

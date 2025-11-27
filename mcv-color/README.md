@@ -69,7 +69,6 @@ MultiColorTemplate(
     *,
     roi: Optional[ROILike] = None,     # 默认搜索区域
     threshold: float = 1.0,            # 颜色相似度阈值 [0, 1]
-    max_count: int = 1,                # 默认最大返回数量
 )
 ```
 
@@ -97,7 +96,7 @@ offsets = [
 | 方法 | 返回值 | 说明 |
 |------|--------|------|
 | `find(image, roi, threshold)` | `MatchResult \| None` | 返回第一个匹配的点 |
-| `find_all(image, roi, threshold, max_count)` | `List[MatchResult]` | 返回所有匹配点，按扫描顺序 |
+| `find_all(image, roi, threshold, max_count)` | `List[MatchResult]` | 返回所有匹配点，按置信度降序，`max_count`（如指定）限制数量 |
 
 ### 阈值说明
 
@@ -113,8 +112,8 @@ offsets = [
 
 - **图像格式**: 输入图像为 BGR 格式 (OpenCV 默认)，内部自动转换为 RGB 进行匹配
 - **ROI 处理**: 支持 `ROI` 对象或 `[x, y, width, height]` 列表；默认全图搜索
-- **返回类型**: 返回 `MatchResult` 点结果 (`is_point=True`)，`score` 固定为 1.0
-- **扫描顺序**: 结果按从上到下、从左到右的顺序返回
+- **返回类型**: 返回 `MatchResult` 点结果 (`is_point=True`)，`score` 反映颜色匹配程度，范围 [0, 1]
+- **排序规则**: 结果按 `score` 从高到低排序，可配合 `max_count` 截断数量
 - **越界检查**: 偏移点超出图像边界时该候选点不匹配
 
 ## 验证规则
@@ -122,7 +121,7 @@ offsets = [
 - `first_color` 和 `offsets` 中的颜色必须是有效格式
 - RGB 值必须在 [0, 255] 范围内
 - `threshold` 必须在 [0, 1] 范围内
-- `max_count` 必须为正整数
+- `max_count`（如指定）必须为正整数
 - 图像必须是 3 通道 numpy.ndarray
 
 ## 性能建议

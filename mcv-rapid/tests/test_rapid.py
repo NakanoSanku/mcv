@@ -134,11 +134,10 @@ class TestRapidOCRTemplate:
 
     def test_init_validation_max_count(self) -> None:
         """Test invalid max_count raises error."""
+        img = np.zeros((100, 100, 3), dtype=np.uint8)
+        template = RapidOCRTemplate(pattern="x", threshold=0.5)
         with pytest.raises(ValueError, match="max_count must be positive"):
-            RapidOCRTemplate(pattern="x", max_count=0)
-
-        with pytest.raises(ValueError, match="max_count must be positive"):
-            RapidOCRTemplate(pattern="x", max_count=-1)
+            template.find_all(img, max_count=0)
 
     def test_find_exact_match(self, monkeypatch, sample_ocr_output) -> None:
         """Test finding text with exact substring match."""
@@ -160,7 +159,7 @@ class TestRapidOCRTemplate:
         monkeypatch.setattr("mcv.rapid._get_ocr_client", lambda **_: dummy)
 
         img = np.zeros((100, 100, 3), dtype=np.uint8)
-        template = RapidOCRTemplate(pattern="金币", threshold=0.5, max_count=10)
+        template = RapidOCRTemplate(pattern="金币", threshold=0.5)
 
         results = template.find_all(img)
 
@@ -173,7 +172,7 @@ class TestRapidOCRTemplate:
         monkeypatch.setattr("mcv.rapid._get_ocr_client", lambda **_: dummy)
 
         img = np.zeros((100, 100, 3), dtype=np.uint8)
-        template = RapidOCRTemplate(pattern=None, threshold=0.5, max_count=10)
+        template = RapidOCRTemplate(pattern=None, threshold=0.5)
 
         results = template.find_all(img)
 
@@ -219,7 +218,7 @@ class TestRapidOCRTemplate:
         img = np.zeros((100, 100, 3), dtype=np.uint8)
 
         # High threshold excludes most results
-        template = RapidOCRTemplate(pattern=None, threshold=0.9, max_count=10)
+        template = RapidOCRTemplate(pattern=None, threshold=0.9)
         results = template.find_all(img)
         assert len(results) == 1
         assert results[0].text == "确认"
@@ -234,7 +233,7 @@ class TestRapidOCRTemplate:
         monkeypatch.setattr("mcv.rapid._get_ocr_client", lambda **_: dummy)
 
         img = np.zeros((100, 100, 3), dtype=np.uint8)
-        template = RapidOCRTemplate(pattern=None, threshold=0.99, max_count=10)
+        template = RapidOCRTemplate(pattern=None, threshold=0.99)
 
         # Default threshold too high
         results = template.find_all(img)
@@ -298,9 +297,9 @@ class TestRapidOCRTemplate:
         monkeypatch.setattr("mcv.rapid._get_ocr_client", lambda **_: dummy)
 
         img = np.zeros((100, 100, 3), dtype=np.uint8)
-        template = RapidOCRTemplate(pattern=None, threshold=0.2, max_count=2)
+        template = RapidOCRTemplate(pattern=None, threshold=0.2)
 
-        results = template.find_all(img)
+        results = template.find_all(img, max_count=2)
         assert len(results) == 2
 
         # Override max_count
@@ -313,7 +312,7 @@ class TestRapidOCRTemplate:
         monkeypatch.setattr("mcv.rapid._get_ocr_client", lambda **_: dummy)
 
         img = np.zeros((100, 100, 3), dtype=np.uint8)
-        template = RapidOCRTemplate(pattern=None, threshold=0.2, max_count=10)
+        template = RapidOCRTemplate(pattern=None, threshold=0.2)
 
         results = template.find_all(img)
 
