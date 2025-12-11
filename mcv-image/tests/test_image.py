@@ -86,7 +86,7 @@ class TestImageTemplate:
     def test_init_invalid_type(self) -> None:
         """Test invalid type raises error."""
         with pytest.raises(TypeError, match="numpy.ndarray"):
-            ImageTemplate("not an array")  # type: ignore
+            ImageTemplate(12345)  # type: ignore
 
     def test_init_invalid_shape(self) -> None:
         """Test invalid shape raises error."""
@@ -270,6 +270,84 @@ class TestImageTemplate:
         template = ImageTemplate(gray_template, threshold=0.8)
         result = template.find(gray_search)
         assert result is not None
+
+
+class TestImageTemplatePathLoading:
+    """Tests for loading template images from file paths."""
+
+    def test_init_with_str_path(self) -> None:
+        """Test initialization with string path."""
+        path = FIXTURES_DIR / "template.png"
+        template = ImageTemplate(str(path), threshold=0.8)
+
+        assert template.template_image is not None
+        assert isinstance(template.template_image, np.ndarray)
+        assert template.template_image.ndim == 2  # Grayscale
+        assert template.default_threshold == 0.8
+
+    def test_init_with_path_object(self) -> None:
+        """Test initialization with Path object."""
+        path = FIXTURES_DIR / "template.png"
+        template = ImageTemplate(path, threshold=0.8)
+
+        assert template.template_image is not None
+        assert isinstance(template.template_image, np.ndarray)
+        assert template.template_image.ndim == 2  # Grayscale
+
+    def test_init_path_not_found(self) -> None:
+        """Test FileNotFoundError when path doesn't exist."""
+        with pytest.raises(FileNotFoundError, match="not found"):
+            ImageTemplate("nonexistent_image.png")
+
+    def test_init_path_is_directory(self) -> None:
+        """Test FileNotFoundError when path is a directory."""
+        with pytest.raises(FileNotFoundError, match="not a file"):
+            ImageTemplate(str(FIXTURES_DIR))
+
+    def test_init_invalid_image_file(self, tmp_path: Path) -> None:
+        """Test ValueError when file is not a valid image."""
+        invalid_file = tmp_path / "invalid.png"
+        invalid_file.write_text("This is not an image")
+
+        with pytest.raises(ValueError, match="Failed to decode image"):
+            ImageTemplate(str(invalid_file))
+
+    def test_path_loaded_as_grayscale(self) -> None:
+        """Test that images loaded from path are grayscale."""
+        path = FIXTURES_DIR / "template.png"
+        template = ImageTemplate(path)
+
+        assert template.template_image.ndim == 2
+
+    def test_path_with_non_ascii_characters(self, tmp_path: Path) -> None:
+        """Test loading from path with non-ASCII characters."""
+        import shutil
+
+        source = FIXTURES_DIR / "template.png"
+        dest = tmp_path / "模板图片.png"
+        shutil.copy(source, dest)
+
+        template = ImageTemplate(dest, threshold=0.8)
+        assert template.template_image is not None
+
+    def test_path_and_array_equivalence(
+        self, e2e_screenshot: np.ndarray
+    ) -> None:
+        """Test that path and array loading produce similar results."""
+        path = FIXTURES_DIR / "template.png"
+
+        # Load via path
+        template_from_path = ImageTemplate(path, threshold=0.8)
+        result_from_path = template_from_path.find(e2e_screenshot)
+
+        # Load via array
+        template_array = cv2.imread(str(path), cv2.IMREAD_COLOR)
+        template_from_array = ImageTemplate(template_array, threshold=0.8)
+        result_from_array = template_from_array.find(e2e_screenshot)
+
+        # Should find same location
+        if result_from_path and result_from_array:
+            assert result_from_path.top_left == result_from_array.top_left
 
 
 class TestImageTemplateEdgeCases:

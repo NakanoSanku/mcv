@@ -132,8 +132,11 @@ class TestRapidOCRTemplate:
         with pytest.raises(ValueError, match="threshold must be in"):
             RapidOCRTemplate(pattern="x", threshold=-0.1)
 
-    def test_init_validation_max_count(self) -> None:
+    def test_init_validation_max_count(self, monkeypatch, sample_ocr_output) -> None:
         """Test invalid max_count raises error."""
+        dummy = DummyOCR(sample_ocr_output)
+        monkeypatch.setattr("mcv.rapid._get_ocr_client", lambda **_: dummy)
+
         img = np.zeros((100, 100, 3), dtype=np.uint8)
         template = RapidOCRTemplate(pattern="x", threshold=0.5)
         with pytest.raises(ValueError, match="max_count must be positive"):

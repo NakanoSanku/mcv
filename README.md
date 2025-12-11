@@ -171,12 +171,14 @@ class Template(ABC):
 
 ### 输入规范
 
-- **图像格式**: numpy.ndarray (BGR 格式，与 OpenCV 一致)
+- **图像格式**:
+  - numpy.ndarray (BGR 格式，与 OpenCV 一致)
+  - 文件路径 (str 或 pathlib.Path) - 图像模板支持直接传入路径
 - **ROI 格式**: `ROI(x, y, width, height)` 或 `[x, y, width, height]`
 - **坐标系**: 左上角为原点，x 向右增长，y 向下增长
 - **颜色格式**: 十六进制字符串 (如 "FF5500") 或 RGB 元组
 
-### 示例用法 (计划中)
+### 示例用法
 
 #### 图像模版匹配
 
@@ -184,11 +186,12 @@ class Template(ABC):
 import cv2
 from mcv.image import ImageTemplate
 
-# 加载图像
+# 方法1: 直接使用图像路径 (推荐)
 screen = cv2.imread("screenshot.png")
-template_img = cv2.imread("button.png")
+template = ImageTemplate("button.png", threshold=0.9)
 
-# 创建模版，设置默认阈值
+# 方法2: 使用 numpy 数组
+template_img = cv2.imread("button.png")
 template = ImageTemplate(template_img, threshold=0.9)
 
 # 使用默认参数查找

@@ -21,12 +21,14 @@ import cv2
 
 from mcv.image import ImageTemplate
 
-# 加载图像 (BGR 格式)
+# 方法1: 加载图像数组 (BGR格式)
 screen = cv2.imread("screenshot.png")
 button = cv2.imread("button.png")
-
-# 创建模版
 template = ImageTemplate(button, threshold=0.9)
+
+# 方法2: 直接使用图像路径 (推荐)
+screen = cv2.imread("screenshot.png")
+template = ImageTemplate("button.png", threshold=0.9)  # 直接传入路径
 
 # 查找单个目标
 result = template.find(screen)
@@ -50,10 +52,10 @@ for r in results:
 
 ```python
 ImageTemplate(
-    template_image: np.ndarray,        # 模版图像 (BGR 或灰度)
+    template_image: ImageLike,             # 模版图像 (np.ndarray) 或路径 (str/Path)
     *,
-    roi: Optional[ROILike] = None,     # 默认搜索区域
-    threshold: float = 0.8,            # 默认匹配阈值 [0, 1]
+    roi: Optional[ROILike] = None,         # 默认搜索区域
+    threshold: float = 0.8,                # 默认匹配阈值 [0, 1]
 )
 ```
 
@@ -61,7 +63,7 @@ ImageTemplate(
 
 | 参数 | 说明 |
 |------|------|
-| `template_image` | 模版图像，numpy.ndarray，支持 BGR (HxWx3) 或灰度 (HxW) |
+| `template_image` | 模版图像，支持:<br>- `numpy.ndarray`: BGR (HxWx3) 或灰度 (HxW)<br>- `str` 或 `pathlib.Path`: 图像文件路径 (自动转为灰度) |
 | `threshold` | 默认匹配阈值，范围 [0, 1] |
 
 ### 方法
@@ -88,13 +90,18 @@ ImageTemplate(
 - **参数验证**: `threshold` 必须在 [0, 1] 范围内，`max_count`（如指定）必须为正整数，否则抛出 `ValueError`
 - **NMS 去重**: 基于 IoU 去除重叠匹配，避免重复检测
 - **分数归一化**: 所有分数统一到 [0, 1] 范围，便于跨方法比较
+- **路径加载**: `template_image` 支持文件路径 (str/Path)，使用 `np.fromfile` + `cv2.imdecode` 加载，支持非 ASCII 路径
+  - 从路径加载的图像自动转换为灰度
+  - 路径不存在时抛出 `FileNotFoundError`
+  - 文件存在但不是有效图像时抛出 `ValueError`
 
 ### 图像格式要求
 
-| 格式 | shape | 说明 |
-|------|-------|------|
-| BGR | (H, W, 3) | OpenCV 默认格式 |
-| 灰度 | (H, W) | 单通道图像 |
+| 输入类型 | 格式 | shape | 说明 |
+|---------|------|-------|------|
+| numpy.ndarray | BGR | (H, W, 3) | OpenCV 默认格式 |
+| numpy.ndarray | 灰度 | (H, W) | 单通道图像 |
+| str/Path | 图像文件 | - | 支持常见格式 (.png, .jpg, .bmp 等)，自动转为灰度 |
 
 ## 性能建议
 

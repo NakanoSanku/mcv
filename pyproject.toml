@@ -24,5 +24,7 @@ mcv-rapid = { workspace = true }
 dev = [
     "mcv-paddle",
     "mcv-rapid",
+    "opencv-python-headless>=4.12.0.88",
     "pytest>=8.4.2",
+    "pytest-html>=4.1.1",
 ]

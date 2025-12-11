@@ -322,6 +322,10 @@ class PaddleOCRTemplate(Template):
         """
         self._validate_image(image)
 
+        # Validate max_count early
+        if max_count is not None:
+            self._resolve_max_count(max_count)
+
         img_height, img_width = image.shape[:2]
         effective_roi = self._resolve_roi(roi, img_width, img_height)
         if effective_roi is None:

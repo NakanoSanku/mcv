@@ -8,6 +8,7 @@ and optional pyramid acceleration.
 from __future__ import annotations
 
 import math
+from pathlib import Path
 from typing import List, Optional, Sequence, Tuple, Union
 
 import cv2
@@ -16,6 +17,7 @@ import numpy as np
 from mcv.base import MatchResult, ROI, Template
 
 ROILike = Union[ROI, Sequence[int]]
+ImageLike = Union[np.ndarray, str, Path]
 
 
 class ImageTemplate(Template):
@@ -28,19 +30,25 @@ class ImageTemplate(Template):
 
     Example:
         >>> import cv2
+        >>> from mcv.image import ImageTemplate
+        >>> # Load from numpy array
         >>> screen = cv2.imread("screenshot.png")
         >>> template_img = cv2.imread("button.png")
         >>> template = ImageTemplate(template_img, threshold=0.9)
         >>> result = template.find(screen)
         >>> if result:
         ...     print(f"Found: {result.center}, confidence: {result.score:.2f}")
+        >>>
+        >>> # Or load directly from path
+        >>> template = ImageTemplate("button.png", threshold=0.9)
+        >>> result = template.find(screen)
     """
 
     _SQDIFF_METHODS = (cv2.TM_SQDIFF, cv2.TM_SQDIFF_NORMED)
 
     def __init__(
         self,
-        template_image: np.ndarray,
+        template_image: ImageLike,
         *,
         roi: Optional[ROILike] = None,
         threshold: float = 0.8,
@@ -49,20 +57,29 @@ class ImageTemplate(Template):
 
         Args:
             template_image: Template image (numpy.ndarray, BGR or grayscale)
+                            OR path to image file (str or pathlib.Path).
+                            Images loaded from paths are automatically converted to grayscale.
             roi: Default search region
             threshold: Default match threshold
 
         Raises:
             TypeError: Invalid image type
-            ValueError: Unsupported image format
+            ValueError: Unsupported image format or invalid image file
+            FileNotFoundError: Template image file not found
         """
         # max_count is intentionally fixed at 1 for ImageTemplate.
         # find_all() ignores this default and returns all matches unless
         # max_count is explicitly provided by the caller.
         super().__init__(roi=roi, threshold=threshold, max_count=1)
 
-        self._validate_image(template_image)
-        self.template_image = template_image
+        # Load image from path if needed
+        if isinstance(template_image, (str, Path)):
+            template_array = self._load_image_from_path(template_image)
+        else:
+            template_array = template_image
+
+        self._validate_image(template_array)
+        self.template_image = template_array
         # Always enable grayscale matching for robustness and performance.
         self.grayscale = True
         # Default matching method and NMS settings are fixed for simplicity.
@@ -75,7 +92,7 @@ class ImageTemplate(Template):
         self.max_pyramid_level = 4
         self.min_pyramid_size = 16
 
-        self._template_processed = self._preprocess(template_image)
+        self._template_processed = self._preprocess(template_array)
         self._template_height, self._template_width = self._template_processed.shape[:2]
         self._template_pyramid: List[np.ndarray] = [self._template_processed]
 
@@ -169,6 +186,42 @@ class ImageTemplate(Template):
         ]
 
         return self._apply_nms(matches, effective_max_count)
+
+    def _load_image_from_path(self, file_path: Union[str, Path]) -> np.ndarray:
+        """Load image from file path using np.fromfile + cv2.imdecode.
+
+        Args:
+            file_path: Path to image file
+
+        Returns:
+            Loaded image as grayscale numpy.ndarray
+
+        Raises:
+            FileNotFoundError: If file does not exist or is not a file
+            ValueError: If file is not a valid image
+        """
+        path = Path(file_path)
+
+        if not path.exists():
+            raise FileNotFoundError(f"Template image file not found: {file_path}")
+
+        if not path.is_file():
+            raise FileNotFoundError(f"Path is not a file: {file_path}")
+
+        try:
+            data = np.fromfile(str(path), dtype=np.uint8)
+        except Exception as e:
+            raise ValueError(f"Failed to read file {file_path}: {e}")
+
+        image = cv2.imdecode(data, cv2.IMREAD_GRAYSCALE)
+
+        if image is None:
+            raise ValueError(
+                f"Failed to decode image from {file_path}. "
+                "File may not be a valid image format."
+            )
+
+        return image
 
     def _validate_image(self, image: np.ndarray) -> None:
         """Validate image format.
